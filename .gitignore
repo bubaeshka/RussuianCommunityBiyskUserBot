@@ -1,0 +1,5 @@
+*.session
+connect.ini
+*.sln
+*.pyproj
+/.vs
