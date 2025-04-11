@@ -1,7 +1,10 @@
 
 from unittest import result
+import telethon
 from telethon.sync import TelegramClient
-from telethon.tl.types import phone
+from telethon.tl.functions.channels import GetParticipantsRequest
+from telethon.tl.types import ChannelParticipant, ChannelParticipantsSearch, phone
+from telethon import functions, types
 
 
 class Parser:
@@ -49,18 +52,77 @@ class Parser:
          raise ValueError('You input incorrect value')
       print('You select the... ', dialogs[select-1][1])
       return dialogs[select-1][0]
-
-         
-
-#channel = client.get_entity('https://t.me/Biysk_RO')
-
-#def get_channel_members():
-#    offset = 0
-#    limit = 20
     
-
-#    return 0
+    #функция получения списка пользователей чата/канала 
+    def get_channel_members(self,channel):
+       #честно украденное откуда то с хабра, не получилось доработать, приходится формировать два списка
+       offset = 0
+       limit = 100
+       all_members = []
+       all_users= []
+       all_participants = []
+       while True:
+         result = self.client(GetParticipantsRequest(
+              channel=channel,
+              filter=ChannelParticipantsSearch(''),
+              offset=offset,
+              limit=limit,
+              hash=0
+         ))
+         users = result.users    
+         all_users.extend(users)
+         all_participants.extend(result.participants)
+         print(len(users))
+         if len(users) < limit:
+             break
+         offset += limit
+       ############################  
+       test=0
+       for participant in all_participants: 
+          test+=1
+          match type(participant):
+             case telethon.types.ChannelParticipantBanned: print(test,' ','Banned')
+             case telethon.types.ChannelParticipantAdmin:  print(test,' ','Admin')                    
+             case telethon.types.ChannelParticipant: print(test,' ','Default')  
+             case telethon.types.ChannelParticipantCreator: print(test,' ','Creator')
+             case telethon.types.ChannelParticipantLeft: print(test,' ','Left')
+             case telethon.types.ChannelParticipantSelf: print(test,' ','Self')          
+             case __: print(test, ' ', 'Error')
+       #формируем новую сущность участника    
+       num=0 
+       class Member: pass
+       for user in all_users:
+          member=Member()
+          member.id = user.id
+          member.first_name=user.first_name
+          member.last_name=user.last_name
+          member.username = user.username
+          member.phone = user.phone
+          found=False
+          for participant in all_participants:
+             if (type(participant)!=telethon.types.ChannelParticipantLeft and type(participant)!=telethon.types.ChannelParticipantBanned and participant.user_id == user.id):
+                if found: raise LookupError('Duplicate user id in list of participants')
+                found=True
+                member.date = participant.date          
+                match type(participant):
+                   case telethon.types.ChannelParticipantAdmin: member.type='Admin'
+                   case telethon.types.ChannelParticipant: member.type='Default'
+                   case telethon.types.ChannelParticipantCreator: member.type='Creator'
+                   case telethon.types.ChannelParticipantSelf: member.type='Self'
+                   case __: member.type='Error'  
+                #all_participants.remove(participant)      
+          if not found: 
+             member.date = 0
+             member.type = 'NotFound or Banned or Left'
+          num+=1
+          all_members.append(member)
+       return all_members
+         
     
 #основной код программы
 parser = Parser('connect.ini')
-print(parser.select_dialog())
+members = parser.get_channel_members(parser.select_dialog())
+i=0
+for member in members:
+   i+=1
+   print(i,' ', member.id,' ',member.first_name,' ',member.last_name,' ', member.username,' ', member.phone,' ', member.date,' ',member.type)
