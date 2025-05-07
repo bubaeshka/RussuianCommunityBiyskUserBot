@@ -4,6 +4,7 @@ import csv
 class User_interface:
     
     #функция возвращает выбранный id конкретного диалога
+    @staticmethod
     def select_dialog(dialogs):
       print('Select channel or group do you need')
       if dialogs is None: 
