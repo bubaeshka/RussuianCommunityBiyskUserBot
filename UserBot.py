@@ -1,12 +1,12 @@
-
 from unittest import result
 import telethon
 from telethon.sync import TelegramClient
 from telethon.tl.functions.channels import GetParticipantsRequest
-from telethon.tl.types import ChannelParticipant, ChannelParticipantsSearch, phone
+from telethon.tl.types import ChannelParticipant, ChannelParticipantsRecent, ChannelParticipantsSearch, phone
 from telethon import functions, types
 
 
+#класс-обёртка библиотеки telethon
 class Parser:
     
     #конструктор читает настройки из переданного в него ini-файла и устанавливает соединение с телеграммом
@@ -32,27 +32,19 @@ class Parser:
            raise ConnectionError("could not connect telegram client")
         self.connected = True 
         
-    #функция распечатывает на экране список диалогов/каналов/групп и предлагает выбрать конкретный, возвращает его id 
-    def select_dialog(self):
+    #функция возвращает список диалогов/каналов/групп аккаунта в виде словаря 
+    def get_dialogs(self):
       if not self.connected: 
          raise ConnectionError("could not connect telegram client")
-      i=1
-      dialogs=[]
-      print('Select channel or group do you need')
+      dialogs={}
       for dialog in self.client.iter_dialogs(): 
-         print(i,' ',dialog.title,' ',dialog.id)
-         dialogs.append((dialog.id,dialog.title))
-         i+=1     
+         dialogs[dialog.id]=dialog.title  
       if len(dialogs)==0: 
-         print('Your account has not chats/groups/dialogs')
-         return
-      select = int(input())
-      print(select)
-      if (1>select) or (select>len(dialogs)):
-         raise ValueError('You input incorrect value')
-      print('You select the... ', dialogs[select-1][1])
-      return dialogs[select-1][0]
-    
+         return None
+      else:
+         return dialogs
+      
+          
     #функция получения списка пользователей чата/канала 
     def get_channel_members(self,channel):
        #честно украденное откуда то с хабра, не получилось доработать, приходится формировать два списка
@@ -117,12 +109,5 @@ class Parser:
           num+=1
           all_members.append(member)
        return all_members
-         
-    
-#основной код программы
-parser = Parser('connect.ini')
-members = parser.get_channel_members(parser.select_dialog())
-i=0
-for member in members:
-   i+=1
-   print(i,' ', member.id,' ',member.first_name,' ',member.last_name,' ', member.username,' ', member.phone,' ', member.date,' ',member.type)
+           
+   
