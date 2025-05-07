@@ -3,3 +3,5 @@ connect.ini
 *.sln
 *.pyproj
 /.vs
+**/__pycache__
+*.csv
